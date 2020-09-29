@@ -1,0 +1,110 @@
+---
+title: "Demographic"
+author: "Michael Hall"
+date: "9/27/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE, warning = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+
+# Prepare for analyses
+```{r ,warning=FALSE,comment="",echo=FALSE}
+set.seed(200)
+library(PerformanceAnalytics)
+library(olsrr)
+```
+
+
+
+# Read in the data from my working directory
+
+```{r DATA, echo = FALSE,warning=FALSE,comment=""}
+
+Demographic <- readRDS("CDI_data.rda")
+Region<-read.csv("C:/Users/micha/OneDrive/Documents/Demographic/Demographic/Demographic.csv")
+Region<-as.data.frame(Region)
+attach(Region)
+```
+
+
+
+#### The head of the data set providing a table of observations with Physician
+
+```{r data, echo=FALSE, results='asis',comment="", warning=FALSE}
+library(knitr)
+kable(Region[1:5,],caption="Demographic Data")
+
+```
+
+# The number of active physicians (Y) is regressed against 
+# total population (X1), total personal income (X2), and
+# geographic area (X3,X4,X5)
+# If X3 = 1 then the observation is located in the North East region and 0 otherwise.
+# If X4 = 1 then the observation is located in the North Central Region and 0 otherwise.
+# If X5 = 1 then the observation is located in the Southern region and 0 otherwise.
+
+# Fitting a first order regression model to determine if geographic effects are present at the significance level of 10%.
+# The Model is regressed against the number of physicians. 
+
+```{r firstorder,comment="",warning=FALSE}
+model <- lm(Y ~ X1 + X2 + X3 + X4 + X5, data = Region)
+summary(model)
+```
+
+# The overall model is significant and each regressor is significant at a 10% significance level.
+# The Southern region is most statistically significant with a p-value of 1.731%
+# The Northeast region is statistically significant at p-value 8.685%
+# North Central region is statistcally significant at p-value 8.817%
+# The intercept of the model is close to zero
+# If a randomly selected State and City are in the southern indexed region holding all other predictors constant, the number of predicted physicians increase by approximately 191.
+# If a randomly selected State and City are in the Northeast region holding all other predictors constant, the number of predicted physicians increases by approximately 149.
+# If a randomly selected State and City are in the North Central region holding all other predictors constant, the number of predicted physicians increases by approximately 145.5.
+# The coefficient for X1(Total Population) is significant but close to zero, however, because it is associated with population, the interpretation is perhaps more important than its relative proximity to zero. According the the model, for every 100,000 people in a population there is approximately 55.15 physicians
+# The coefficient for X2(Total Personal Income) is significant. According to the model, for every additional $1000 in personal income the number of predicted physicians increases by 107.
+
+
+#### A public safety official wishes to predict the rate of serious crimes.
+# Y:Serious Crimes per 100,000 population
+
+```{r PublicSafety,comment="",warning=FALSE}
+par(mfrow=c(3,3))
+Training<-read.csv("C:/Users/micha/OneDrive/Documents/Demographic/Demographic/Training.csv")
+attach(Training)
+pairs(Training[1:4],col="black",pch=20)
+pairs(Training[4:8],col="black",pch=20)
+pairs(Training[8:12],col="black",pch=20)
+cor(Training)
+VariableVector<-c("Number of Serious Crimes per 100,000 population","LandArea","PercentYoungPopulatoin","PercentOLDPopulation","NumberofPhysicians","NumberofHospitalBeds","PercentHSGraduation","PercentBachelorsDegree","PercentBelowPoverty","PercentUnemployed","PerCapitaIncome","TotalPersonalIncome")
+
+```
+
+```{r correlation, echo=FALSE, results='asis',comment="",warning=FALSE}
+kable(VariableVector,caption="Demographic Data")
+chart.Correlation(Training,histogram = TRUE,pch=20)
+
+```
+
+```{r modelselection,echo=FALSE,warning=FALSE, comment=""}
+library(olsrr)
+model3<-lm( Y ~ .,data=Training)
+k2<-ols_step_forward_p(model3)
+plot(k2)
+k2
+```
+
+
+
+```{r fullmodel,warning=FALSE,echo=FALSE,comment=""}
+
+full_model <- lm(Y ~ NumHospitalBeds + TotalPIncome + PerCapitaIncome + NumPhysicians + PercentCollDeg + PercentBelowPov ,data=Training)
+summary(full_model)
+par(mfrow=c(2,2))
+plot(full_model)
+```
+
+
